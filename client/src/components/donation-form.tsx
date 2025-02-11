@@ -15,6 +15,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { apiRequest } from "@/lib/queryClient";
+import { z } from "zod";
+
+const extendedDonationSchema = insertDonationSchema.extend({
+  amount: z.number().min(50, "Minimum donation amount is ₹50"),
+  email: z.string().email().optional(),
+});
 
 declare global {
   interface Window {
@@ -25,10 +31,11 @@ declare global {
 export default function DonationForm() {
   const { toast } = useToast();
   const form = useForm({
-    resolver: zodResolver(insertDonationSchema),
+    resolver: zodResolver(extendedDonationSchema),
     defaultValues: {
       name: "",
-      amount: 0,
+      email: "",
+      amount: 50,
       paymentId: "",
       date: new Date().toISOString(),
     },
@@ -37,8 +44,8 @@ export default function DonationForm() {
   const mutation = useMutation({
     mutationFn: async (values: any) => {
       const options = {
-        key: "PuOVhOd29SpKvW", // Replace with your actual key
-        amount: values.amount * 100, // Razorpay expects amount in paise
+        key: "PuOVhOd29SpKvW",
+        amount: values.amount * 100,
         currency: "INR",
         name: "Lions Dhandhania Annapurna Bhojan",
         description: "Donation",
@@ -52,6 +59,7 @@ export default function DonationForm() {
         },
         prefill: {
           name: values.name,
+          email: values.email,
         },
         theme: {
           color: "#0097FB",
@@ -84,9 +92,23 @@ export default function DonationForm() {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name</FormLabel>
+                <FormLabel>Name *</FormLabel>
                 <FormControl>
                   <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input type="email" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -98,10 +120,11 @@ export default function DonationForm() {
             name="amount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Amount (₹)</FormLabel>
+                <FormLabel>Amount (₹) *</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
+                    min="50"
                     {...field} 
                     onChange={(e) => field.onChange(parseInt(e.target.value))}
                   />
