@@ -1,14 +1,13 @@
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-
 import crypto from "crypto";
-
-const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "your_webhook_secret";
-
 import multer from "multer";
 import { insertPhotoSchema, insertDonationSchema } from "@shared/schema";
+import express from "express";
 
+const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "your_webhook_secret";
 const upload = multer();
 
 export function registerRoutes(app: Express): Server {
@@ -56,7 +55,7 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       res.status(500).json({ message: "Failed to process donation" });
     }
-
+  });
 
   app.post("/api/razorpay-webhook", express.raw({ type: 'application/json' }), async (req, res) => {
     const shasum = crypto.createHmac("sha256", RAZORPAY_WEBHOOK_SECRET);
@@ -69,7 +68,6 @@ export function registerRoutes(app: Express): Server {
       const payment = req.body.payload.payment.entity;
       
       if (payment.status === "captured") {
-        // Payment successful, you can update your database here
         const donation = {
           amount: payment.amount / 100,
           paymentId: payment.id,
@@ -83,12 +81,6 @@ export function registerRoutes(app: Express): Server {
     } else {
       res.status(400).json({ error: "Invalid signature" });
     }
-  });
-
-    }
-
-    const donation = await storage.addDonation(parsed.data);
-    res.json(donation);
   });
 
   app.get("/api/trustees", async (req, res) => {
