@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -7,32 +8,27 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [title, setTitle] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    const checkAuth = () => {
+    const script = document.createElement('script');
+    script.src = "https://auth.util.repl.co/script.js";
+    script.setAttribute('authed', 'checkAuth()');
+    document.body.appendChild(script);
+
+    // @ts-ignore
+    window.checkAuth = () => {
+      // @ts-ignore
       const userId = window.$replit?.user?.id;
       setIsAuthenticated(!!userId);
     };
 
-    checkAuth();
-    window.addEventListener('auth', checkAuth);
-    return () => window.removeEventListener('auth', checkAuth);
+    return () => {
+      document.body.removeChild(script);
+    };
   }, []);
-
-  if (!isAuthenticated) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Admin Access Required</h1>
-        <div className="bg-card p-6 rounded-lg shadow-sm">
-          <p className="mb-4">Please log in to access the admin panel.</p>
-          <script src="https://auth.util.repl.co/script.js"></script>
-        </div>
-      </div>
-    );
-  }
-  const [file, setFile] = useState<File | null>(null);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
@@ -60,7 +56,6 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/photos"] });
       setTitle("");
       setFile(null);
-      // Reset the file input
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = "";
     },
@@ -84,6 +79,18 @@ export default function Admin() {
     }
     uploadMutation.mutate();
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-4">Admin Access Required</h1>
+          <p className="text-muted-foreground mb-4">Please log in to access the admin panel.</p>
+          <div id="auth-container"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

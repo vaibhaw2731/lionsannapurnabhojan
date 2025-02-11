@@ -9,11 +9,15 @@ import Navbar from "@/components/navbar";
 
 function Router() {
   return (
-    <div className="min-h-screen bg-background pt-16">
-      <Navbar />
+    <div className="min-h-screen bg-background">
       <Switch>
-        <Route path="/" component={Home} />
         <Route path="/admin" component={Admin} />
+        <Route path="/">
+          <div className="pt-16">
+            <Navbar />
+            <Home />
+          </div>
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </div>
