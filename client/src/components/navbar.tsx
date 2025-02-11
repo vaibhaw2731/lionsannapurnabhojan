@@ -1,29 +1,49 @@
+
 import { Link } from "wouter";
 
 export default function Navbar() {
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <nav className="bg-white shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/">
-            <a className="text-xl font-bold text-primary">
+            <span className="text-xl font-bold text-primary cursor-pointer">
               Lions Dhandhania
-            </a>
+            </span>
           </Link>
 
           <div className="flex space-x-8">
-            <Link href="/#mission">
-              <a className="text-gray-600 hover:text-primary">Our Mission</a>
-            </Link>
-            <Link href="/#trustees">
-              <a className="text-gray-600 hover:text-primary">Trustees</a>
-            </Link>
-            <Link href="/#gallery">
-              <a className="text-gray-600 hover:text-primary">Gallery</a>
-            </Link>
-            <Link href="/#donate">
-              <a className="text-gray-600 hover:text-primary">Donate</a>
-            </Link>
+            <span 
+              onClick={() => scrollToSection('mission')} 
+              className="text-gray-600 hover:text-primary cursor-pointer"
+            >
+              Our Mission
+            </span>
+            <span 
+              onClick={() => scrollToSection('trustees')} 
+              className="text-gray-600 hover:text-primary cursor-pointer"
+            >
+              Trustees
+            </span>
+            <span 
+              onClick={() => scrollToSection('gallery')} 
+              className="text-gray-600 hover:text-primary cursor-pointer"
+            >
+              Gallery
+            </span>
+            <span 
+              onClick={() => scrollToSection('donate')} 
+              className="text-gray-600 hover:text-primary cursor-pointer"
+            >
+              Donate
+            </span>
           </div>
         </div>
       </div>
