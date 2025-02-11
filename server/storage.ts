@@ -1,77 +1,45 @@
 import { type Photo, type InsertPhoto, type Donation, type InsertDonation, type Trustee, type InsertTrustee } from "@shared/schema";
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool } from '@neondatabase/serverless';
+import { photos, donations, trustees, users } from '../shared/schema';
+import type { InsertPhoto, InsertDonation, InsertTrustee, Photo, Donation, Trustee } from '../shared/schema';
+import { eq } from 'drizzle-orm';
 
-export interface IStorage {
-  getPhotos(): Promise<Photo[]>;
-  addPhoto(photo: InsertPhoto): Promise<Photo>;
-  getDonations(): Promise<Donation[]>;
-  addDonation(donation: InsertDonation): Promise<Donation>;
-  getTrustees(): Promise<Trustee[]>;
-  addTrustee(trustee: InsertTrustee): Promise<Trustee>;
-}
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const db = drizzle(pool);
 
-export class MemStorage implements IStorage {
-  private photos: Map<number, Photo>;
-  private donations: Map<number, Donation>;
-  private trustees: Map<number, Trustee>;
-  private currentPhotoId: number;
-  private currentDonationId: number;
-  private currentTrusteeId: number;
-
-  constructor() {
-    this.photos = new Map();
-    this.donations = new Map();
-    this.trustees = new Map();
-    this.currentPhotoId = 1;
-    this.currentDonationId = 1;
-    this.currentTrusteeId = 1;
-
-    // Add initial trustees
-    this.addTrustee({
-      name: "John Smith",
-      role: "Chairman",
-      bio: "20+ years of experience in social service",
-      imageUrl: "https://images.unsplash.com/photo-1576558656222-ba66febe3dec"
-    });
-    this.addTrustee({
-      name: "Sarah Johnson",
-      role: "Secretary",
-      bio: "Former NGO director with passion for helping others",
-      imageUrl: "https://images.unsplash.com/photo-1554774853-b415df9eeb92"
-    });
-  }
-
+export class Storage {
   async getPhotos(): Promise<Photo[]> {
-    return Array.from(this.photos.values());
+    return db.select().from(photos).orderBy(photos.date);
   }
 
   async addPhoto(photo: InsertPhoto): Promise<Photo> {
-    const id = this.currentPhotoId++;
-    const newPhoto = { ...photo, id };
-    this.photos.set(id, newPhoto);
+    const [newPhoto] = await db.insert(photos).values(photo).returning();
     return newPhoto;
   }
 
   async getDonations(): Promise<Donation[]> {
-    return Array.from(this.donations.values());
+    return db.select().from(donations).orderBy(donations.date);
   }
 
   async addDonation(donation: InsertDonation): Promise<Donation> {
-    const id = this.currentDonationId++;
-    const newDonation = { ...donation, id };
-    this.donations.set(id, newDonation);
+    const [newDonation] = await db.insert(donations).values(donation).returning();
     return newDonation;
   }
 
   async getTrustees(): Promise<Trustee[]> {
-    return Array.from(this.trustees.values());
+    return db.select().from(trustees);
   }
 
   async addTrustee(trustee: InsertTrustee): Promise<Trustee> {
-    const id = this.currentTrusteeId++;
-    const newTrustee = { ...trustee, id };
-    this.trustees.set(id, newTrustee);
+    const [newTrustee] = await db.insert(trustees).values(trustee).returning();
     return newTrustee;
+  }
+
+  async validateCredentials(username: string, passwordHash: string): Promise<boolean> {
+    const user = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    return user.length > 0 && user[0].passwordHash === passwordHash;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new Storage();

@@ -1,4 +1,5 @@
-import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
+
+import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -24,6 +25,12 @@ export const trustees = pgTable("trustees", {
   role: text("role").notNull(),
   bio: text("bio").notNull(),
   imageUrl: text("image_url").notNull(),
+});
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull(),
+  passwordHash: text("password_hash").notNull(),
 });
 
 export const insertPhotoSchema = createInsertSchema(photos).omit({ id: true });
