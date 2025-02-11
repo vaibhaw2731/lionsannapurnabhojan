@@ -12,7 +12,6 @@ export const photos = pgTable("photos", {
 export const donations = pgTable("donations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull(),
   amount: integer("amount").notNull(),
   paymentId: text("payment_id").notNull(),
   date: text("date").notNull(),

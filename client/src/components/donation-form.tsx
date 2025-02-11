@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertDonationSchema } from "@shared/schema";
@@ -15,13 +16,18 @@ import {
 } from "@/components/ui/form";
 import { apiRequest } from "@/lib/queryClient";
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 export default function DonationForm() {
   const { toast } = useToast();
   const form = useForm({
     resolver: zodResolver(insertDonationSchema),
     defaultValues: {
       name: "",
-      email: "",
       amount: 0,
       paymentId: "",
       date: new Date().toISOString(),
@@ -30,15 +36,30 @@ export default function DonationForm() {
 
   const mutation = useMutation({
     mutationFn: async (values: any) => {
-      // In reality, this would integrate with Paytm
-      // For now, we'll simulate a payment
-      const paymentId = `pay_${Math.random().toString(36).slice(2)}`;
-      const donation = {
-        ...values,
-        paymentId,
+      const options = {
+        key: "YOUR_RAZORPAY_KEY_ID", // Replace with your actual key
+        amount: values.amount * 100, // Razorpay expects amount in paise
+        currency: "INR",
+        name: "Lions Dhandhania Annapurna Bhojan",
+        description: "Donation",
+        handler: async function (response: any) {
+          const donation = {
+            ...values,
+            paymentId: response.razorpay_payment_id,
+          };
+          
+          return apiRequest("POST", "/api/donations", donation);
+        },
+        prefill: {
+          name: values.name,
+        },
+        theme: {
+          color: "#0097FB",
+        },
       };
 
-      return apiRequest("POST", "/api/donations", donation);
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
     },
     onSuccess: () => {
       toast({ title: "Thank you for your donation!" });
@@ -66,20 +87,6 @@ export default function DonationForm() {
                 <FormLabel>Name</FormLabel>
                 <FormControl>
                   <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
