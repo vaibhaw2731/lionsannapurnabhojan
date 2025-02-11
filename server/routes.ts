@@ -6,6 +6,7 @@ import crypto from "crypto";
 import multer from "multer";
 import { insertPhotoSchema, insertDonationSchema } from "@shared/schema";
 import express from "express";
+import { requireAuth } from "./auth";
 
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "your_webhook_secret";
 const upload = multer();
@@ -16,7 +17,7 @@ export function registerRoutes(app: Express): Server {
     res.json(photos);
   });
 
-  app.post("/api/photos", upload.single("photo"), async (req, res) => {
+  app.post("/api/photos", requireAuth, upload.single("photo"), async (req, res) => {
     const { title, date } = req.body;
     const imageData = req.file?.buffer.toString("base64");
     

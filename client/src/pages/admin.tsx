@@ -5,7 +5,31 @@ import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function Admin() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [title, setTitle] = useState("");
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const userId = window.$replit?.user?.id;
+      setIsAuthenticated(!!userId);
+    };
+
+    checkAuth();
+    window.addEventListener('auth', checkAuth);
+    return () => window.removeEventListener('auth', checkAuth);
+  }, []);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Admin Access Required</h1>
+        <div className="bg-card p-6 rounded-lg shadow-sm">
+          <p className="mb-4">Please log in to access the admin panel.</p>
+          <script src="https://auth.util.repl.co/script.js"></script>
+        </div>
+      </div>
+    );
+  }
   const [file, setFile] = useState<File | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
