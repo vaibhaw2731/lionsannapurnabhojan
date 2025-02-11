@@ -3,7 +3,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 
 export default function Admin() {
   const [title, setTitle] = useState("");
@@ -13,8 +12,8 @@ export default function Admin() {
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      if (!file) return;
-      
+      if (!file) throw new Error("No file selected");
+
       const formData = new FormData();
       formData.append("title", title);
       formData.append("photo", file);
@@ -25,7 +24,11 @@ export default function Admin() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Failed to upload photo");
+      if (!res.ok) {
+        const error = await res.text();
+        throw new Error(error || "Failed to upload photo");
+      }
+
       return res.json();
     },
     onSuccess: () => {
@@ -33,10 +36,14 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/photos"] });
       setTitle("");
       setFile(null);
+      // Reset the file input
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({ 
         title: "Failed to upload photo",
+        description: error.message,
         variant: "destructive"
       });
     }
@@ -58,7 +65,8 @@ export default function Admin() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
 
-      <div className="max-w-md">
+      <div className="max-w-md bg-card p-6 rounded-lg shadow-sm">
+        <h2 className="text-2xl font-semibold mb-6">Upload New Photo</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Photo Title</label>
@@ -67,6 +75,7 @@ export default function Admin() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter photo title"
+              className="w-full"
             />
           </div>
 
@@ -76,11 +85,13 @@ export default function Admin() {
               type="file"
               accept="image/*"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="w-full"
             />
           </div>
 
           <Button 
             type="submit" 
+            className="w-full"
             disabled={uploadMutation.isPending}
           >
             {uploadMutation.isPending ? "Uploading..." : "Upload Photo"}
