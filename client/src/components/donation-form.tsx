@@ -37,7 +37,7 @@ export default function DonationForm() {
   const mutation = useMutation({
     mutationFn: async (values: any) => {
       const options = {
-        key: "YOUR_RAZORPAY_KEY_ID", // Replace with your actual key
+        key: "PuOVhOd29SpKvW", // Replace with your actual key
         amount: values.amount * 100, // Razorpay expects amount in paise
         currency: "INR",
         name: "Lions Dhandhania Annapurna Bhojan",
