@@ -38,6 +38,24 @@ export function registerRoutes(app: Express): Server {
     const parsed = insertDonationSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: "Invalid donation data" });
+    }
+
+    try {
+      const donation = await storage.addDonation(parsed.data);
+      
+      if (parsed.data.email) {
+        try {
+          await sendThankYouEmail(parsed.data.name, parsed.data.email);
+        } catch (error) {
+          console.error('Failed to send email:', error);
+          // Continue with the donation even if email fails
+        }
+      }
+      
+      res.json(donation);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to process donation" });
+    }
 
 
   app.post("/api/razorpay-webhook", express.raw({ type: 'application/json' }), async (req, res) => {
