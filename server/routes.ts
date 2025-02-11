@@ -4,6 +4,10 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import crypto from "crypto";
 import multer from "multer";
+import bcrypt from "bcryptjs";
+
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || "$2a$10$zPzE9zKRU8P1mLbq5yCG4.HUu0XF0h8GiDR6qiTc6lHmhAyGmxuku"; // default: admin123
 import { insertPhotoSchema, insertDonationSchema } from "@shared/schema";
 import express from "express";
 import { requireAuth } from "./auth";
@@ -17,7 +21,22 @@ export function registerRoutes(app: Express): Server {
     res.json(photos);
   });
 
-  app.post("/api/photos", requireAuth, upload.single("photo"), async (req, res) => {
+  app.post("/api/admin/login", async (req, res) => {
+    const { username, password } = req.body;
+    
+    if (username !== ADMIN_USERNAME) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    res.json({ message: "Logged in successfully" });
+  });
+
+  app.post("/api/photos", upload.single("photo"), async (req, res) => {
     const { title, date } = req.body;
     const imageData = req.file?.buffer.toString("base64");
     

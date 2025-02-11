@@ -1,34 +1,41 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = "https://auth.util.repl.co/script.js";
-    script.setAttribute('authed', 'checkAuth()');
-    document.body.appendChild(script);
-
-    // @ts-ignore
-    window.checkAuth = () => {
-      // @ts-ignore
-      const userId = window.$replit?.user?.id;
-      setIsAuthenticated(!!userId);
-    };
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+  const loginMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) throw new Error("Invalid credentials");
+      return res.json();
+    },
+    onSuccess: () => {
+      setIsAuthenticated(true);
+      toast({ title: "Logged in successfully" });
+    },
+    onError: () => {
+      toast({ 
+        title: "Invalid credentials",
+        variant: "destructive"
+      });
+    },
+  });
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
@@ -44,11 +51,7 @@ export default function Admin() {
         body: formData,
       });
 
-      if (!res.ok) {
-        const error = await res.text();
-        throw new Error(error || "Failed to upload photo");
-      }
-
+      if (!res.ok) throw new Error("Failed to upload photo");
       return res.json();
     },
     onSuccess: () => {
@@ -59,67 +62,82 @@ export default function Admin() {
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = "";
     },
-    onError: (error: Error) => {
+    onError: () => {
       toast({ 
         title: "Failed to upload photo",
-        description: error.message,
         variant: "destructive"
       });
-    }
+    },
   });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file || !title) {
-      toast({
-        title: "Please fill in all fields",
-        variant: "destructive"
-      });
-      return;
-    }
-    uploadMutation.mutate();
-  };
 
   if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold mb-4">Admin Access Required</h1>
-          <p className="text-muted-foreground mb-4">Please log in to access the admin panel.</p>
-          <div id="auth-container"></div>
-        </div>
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6">
+            <h1 className="text-2xl font-bold mb-6">Admin Login</h1>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              loginMutation.mutate();
+            }} className="space-y-4">
+              <div>
+                <label className="block text-sm mb-1">Username</label>
+                <Input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Password</label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={loginMutation.isPending}
+              >
+                {loginMutation.isPending ? "Logging in..." : "Login"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
-
+      <h1 className="text-3xl font-bold mb-8">Photo Upload</h1>
       <div className="max-w-md bg-card p-6 rounded-lg shadow-sm">
-        <h2 className="text-2xl font-semibold mb-6">Upload New Photo</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          uploadMutation.mutate();
+        }} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Photo Title</label>
+            <label className="block text-sm mb-1">Photo Title</label>
             <Input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter photo title"
-              className="w-full"
+              required
             />
           </div>
-
           <div>
-            <label className="block text-sm font-medium mb-1">Photo</label>
+            <label className="block text-sm mb-1">Photo</label>
             <Input
               type="file"
               accept="image/*"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="w-full"
+              required
             />
           </div>
-
           <Button 
             type="submit" 
             className="w-full"
