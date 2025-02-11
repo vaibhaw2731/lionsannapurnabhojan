@@ -44,7 +44,7 @@ export default function DonationForm() {
   const mutation = useMutation({
     mutationFn: async (values: any) => {
       const options = {
-        key: "PuOVhOd29SpKvW",
+        key: import.meta.env.VITE_RAZORPAY_KEY,
         amount: values.amount * 100,
         currency: "INR",
         name: "Lions Dhandhania Annapurna Bhojan",
