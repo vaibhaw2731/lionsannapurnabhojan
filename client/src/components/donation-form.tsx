@@ -24,7 +24,7 @@ const extendedDonationSchema = insertDonationSchema.extend({
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Paytm: any;
   }
 }
 
@@ -43,31 +43,40 @@ export default function DonationForm() {
 
   const mutation = useMutation({
     mutationFn: async (values: any) => {
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY,
-        amount: values.amount * 100,
-        currency: "INR",
-        name: "Lions Dhandhania Annapurna Bhojan",
-        description: "Donation",
-        handler: async function (response: any) {
-          const donation = {
-            ...values,
-            paymentId: response.razorpay_payment_id,
-          };
-          
-          return apiRequest("POST", "/api/donations", donation);
+      // First get order token from our server
+      const response = await apiRequest("POST", "/api/create-payment", {
+        amount: values.amount,
+        email: values.email,
+        name: values.name,
+      });
+
+      const config = {
+        root: "",
+        flow: "DEFAULT",
+        data: {
+          orderId: response.orderId,
+          token: response.txnToken,
+          tokenType: "TXN_TOKEN",
+          amount: values.amount,
         },
-        prefill: {
-          name: values.name,
-          email: values.email,
-        },
-        theme: {
-          color: "#0097FB",
-        },
+        handler: {
+          notifyMerchant: function(eventName: string, data: any) {
+            console.log("notifyMerchant handler function called");
+            console.log("eventName => ", eventName);
+            console.log("data => ", data);
+          }
+        }
       };
 
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
+      return new Promise((resolve, reject) => {
+        window.Paytm.CheckoutJS.init(config)
+          .then(function onSuccess() {
+            window.Paytm.CheckoutJS.invoke();
+          })
+          .catch(function onError(error: any) {
+            reject(error);
+          });
+      });
     },
     onSuccess: () => {
       toast({ title: "Thank you for your donation!" });
