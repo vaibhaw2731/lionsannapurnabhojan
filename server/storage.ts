@@ -5,10 +5,15 @@ import { photos, donations, trustees, users } from '../shared/schema';
 import type { InsertPhoto, InsertDonation, InsertTrustee, Photo, Donation, Trustee } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 
-const poolUrl = process.env.DATABASE_URL?.replace('.us-east-2', '-pooler.us-east-2');
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is required");
+}
+
+const poolUrl = process.env.DATABASE_URL.replace('.us-east-2', '-pooler.us-east-2');
 const pool = new Pool({ 
   connectionString: poolUrl,
-  max: 10 
+  max: 10,
+  connectionTimeoutMillis: 10000
 });
 const db = drizzle(pool);
 
