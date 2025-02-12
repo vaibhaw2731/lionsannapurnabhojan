@@ -5,7 +5,11 @@ import { photos, donations, trustees, users } from '../shared/schema';
 import type { InsertPhoto, InsertDonation, InsertTrustee, Photo, Donation, Trustee } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const poolUrl = process.env.DATABASE_URL?.replace('.us-east-2', '-pooler.us-east-2');
+const pool = new Pool({ 
+  connectionString: poolUrl,
+  max: 10 
+});
 const db = drizzle(pool);
 
 export class Storage {
