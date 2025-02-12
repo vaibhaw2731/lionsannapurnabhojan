@@ -16,6 +16,19 @@ const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "your_web
 const upload = multer();
 
 export function registerRoutes(app: Express): Server {
+  app.get("/api/health", async (req, res) => {
+    try {
+      await pool.query('SELECT 1');
+      res.json({ status: 'ok', message: 'Database connection successful' });
+    } catch (error) {
+      res.status(500).json({ 
+        status: 'error', 
+        message: 'Database connection failed',
+        error: error.message 
+      });
+    }
+  });
+
   app.get("/api/photos", async (req, res) => {
     const photos = await storage.getPhotos();
     res.json(photos);
