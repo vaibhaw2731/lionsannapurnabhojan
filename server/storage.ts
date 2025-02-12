@@ -1,53 +1,46 @@
-import { type Photo, type InsertPhoto, type Donation, type InsertDonation, type Trustee, type InsertTrustee } from "@shared/schema";
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import { Pool } from '@neondatabase/serverless';
-import { photos, donations, trustees, users } from '../shared/schema';
+
 import type { InsertPhoto, InsertDonation, InsertTrustee, Photo, Donation, Trustee } from '../shared/schema';
-import { eq } from 'drizzle-orm';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is required");
-}
-
-const poolUrl = process.env.DATABASE_URL.replace('.us-east-2', '-pooler.us-east-2');
-const pool = new Pool({ 
-  connectionString: poolUrl,
-  max: 10,
-  connectionTimeoutMillis: 10000
-});
-const db = drizzle(pool);
+// In-memory storage
+const photos: Photo[] = [];
+const donations: Donation[] = [];
+const trustees: Trustee[] = [];
+const users = [{ username: 'admin', passwordHash: '$2a$10$zPzE9zKRU8P1mLbq5yCG4.HUu0XF0h8GiDR6qiTc6lHmhAyGmxuku' }];
 
 export class Storage {
   async getPhotos(): Promise<Photo[]> {
-    return db.select().from(photos).orderBy(photos.date);
+    return photos;
   }
 
   async addPhoto(photo: InsertPhoto): Promise<Photo> {
-    const [newPhoto] = await db.insert(photos).values(photo).returning();
+    const newPhoto = { id: photos.length + 1, ...photo };
+    photos.push(newPhoto);
     return newPhoto;
   }
 
   async getDonations(): Promise<Donation[]> {
-    return db.select().from(donations).orderBy(donations.date);
+    return donations;
   }
 
   async addDonation(donation: InsertDonation): Promise<Donation> {
-    const [newDonation] = await db.insert(donations).values(donation).returning();
+    const newDonation = { id: donations.length + 1, ...donation };
+    donations.push(newDonation);
     return newDonation;
   }
 
   async getTrustees(): Promise<Trustee[]> {
-    return db.select().from(trustees);
+    return trustees;
   }
 
   async addTrustee(trustee: InsertTrustee): Promise<Trustee> {
-    const [newTrustee] = await db.insert(trustees).values(trustee).returning();
+    const newTrustee = { id: trustees.length + 1, ...trustee };
+    trustees.push(newTrustee);
     return newTrustee;
   }
 
   async validateCredentials(username: string, passwordHash: string): Promise<boolean> {
-    const user = await db.select().from(users).where(eq(users.username, username)).limit(1);
-    return user.length > 0 && user[0].passwordHash === passwordHash;
+    const user = users.find(u => u.username === username);
+    return user?.passwordHash === passwordHash;
   }
 }
 
