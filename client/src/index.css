@@ -21,6 +21,7 @@
     --ring: 217 60% 29%;
     --radius: 0.5rem;
   }
+}
 
 @layer base {
   * {
